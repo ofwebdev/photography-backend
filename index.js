@@ -1,11 +1,11 @@
 const express = require("express");
 const cors = require("cors");
-
 require("dotenv").config();
-const app = express();
+const jwt = require("jsonwebtoken");
 
 const { MongoClient, ServerApiVersion } = require("mongodb");
 
+const app = express();
 // middleware
 app.use(express.json());
 app.use(cors());
@@ -25,6 +25,33 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    const database = client.db("Photograph");
+    const userCollection = database.collection("users");
+
+    // POST USER
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const query = { email: user.email };
+      const existingUser = await userCollection.findOne(query);
+
+      console.log("existing user", existingUser);
+
+      if (existingUser) {
+        return res.send({ message: "user already exists" });
+      }
+
+      const result = await userCollection.insertOne(user);
+      res.send(result);
+    });
+
+    // GET USER
+    app.get("/users", async (req, res) => {
+      const result = await userCollection.find().toArray();
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -37,7 +64,7 @@ async function run() {
 }
 run().catch(console.dir);
 
-app.get("/", (req, rse) => {
+app.get("/", (req, res) => {
   res.send("Server route");
 });
 
