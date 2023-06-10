@@ -3,7 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 // middleware
@@ -89,18 +89,51 @@ async function run() {
     });
 
     // GET USER
-    app.get("/users", async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const result = await userCollection.find().toArray();
       res.send(result);
     });
 
+    // USER EMAIL
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      console.log(email);
+
+      if (req.decoded.email !== email) {
+        res.send({ admin: false });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const result = { admin: user?.role === "admin" };
+      res.send(result);
+    });
+
+    app.get("/users/role/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      console.log(email);
+
+      if (req.decoded.email !== email) {
+        res.send({ instructor: false });
+      } else {
+        const query = { email: email };
+        const user = await userCollection.findOne(query);
+        const result = { instructor: user?.role === "instructor" };
+        res.send(result);
+      }
+    });
+
     // UPDATE ROLE
-    app.patch("/users/admin/:id", async (req, res) => {
+    app.patch("/users/role/:id", async (req, res) => {
       const id = req.params.id;
+      const { role } = req.body;
+
       const filter = { _id: new ObjectId(id) };
       const updateDoc = {
         $set: {
-          role: "admin",
+          role: role,
         },
       };
 
