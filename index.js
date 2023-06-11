@@ -185,6 +185,21 @@ async function run() {
       res.send(result);
     });
 
+    app.post("/class/:id", async (req, res) => {
+      const classId = req.params.id;
+      const { feedback } = req.body;
+
+      const filter = { _id: new ObjectId(classId) };
+      const updateDoc = {
+        $set: {
+          feedback: feedback,
+        },
+      };
+
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     app.delete("/class/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
