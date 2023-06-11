@@ -157,6 +157,20 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/instructors", async (req, res) => {
+      try {
+        const instructors = await userCollection
+          .find({ role: "instructor" })
+          .toArray();
+        // const instructorIds = instructors.map((instructor) => instructor._id);
+
+        res.send(instructors);
+      } catch (error) {
+        console.error("Error fetching instructor IDs:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+      }
+    });
+
     // Class collection
     app.get("/class", async (req, res) => {
       const result = await classCollection.find().toArray();
