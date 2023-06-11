@@ -164,7 +164,6 @@ async function run() {
       res.send(result);
     });
 
-    // verifyJWT, verifyAdmin,
     app.post("/class", async (req, res) => {
       const newItem = req.body;
       const result = await classCollection.insertOne(newItem);
@@ -175,36 +174,18 @@ async function run() {
       const classId = req.params.id;
       const { status } = req.body;
 
-      try {
-        // Find the class by its ID in the database
-        const classItem = await classCollection.findOne({
-          _id: ObjectId(classId),
-        });
+      const filter = { _id: new ObjectId(classId) };
+      const updateDoc = {
+        $set: {
+          status: status,
+        },
+      };
 
-        // If the class doesn't exist, return an error response
-        if (!classItem) {
-          return res.status(404).json({ message: "Class not found" });
-        }
-
-        // Update the approval status
-        classItem.approvalStatus = status;
-
-        // Update the class in the database
-        const result = await classCollection.updateOne(
-          { _id: ObjectId(classId) },
-          { $set: classItem }
-        );
-        res.send(result);
-
-        res.json({ message: "Class status updated successfully" });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "An error occurred" });
-      }
+      const result = await classCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
 
-    // verifyJWT, verifyAdmin,
-    app.delete("/class/:id", async (req, res) => {
+    app.delete("/class/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await classCollection.deleteOne(query);
