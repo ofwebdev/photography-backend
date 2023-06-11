@@ -49,6 +49,7 @@ async function run() {
 
     const database = client.db("Photograph");
     const userCollection = database.collection("users");
+    const classCollection = database.collection("class");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -110,7 +111,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/users/role/:email", verifyJWT, async (req, res) => {
+    app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
 
       console.log(email);
@@ -121,6 +122,21 @@ async function run() {
         const query = { email: email };
         const user = await userCollection.findOne(query);
         const result = { instructor: user?.role === "instructor" };
+        res.send(result);
+      }
+    });
+
+    app.get("/users/student/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      console.log(email);
+
+      if (req.decoded.email !== email) {
+        res.send({ student: false });
+      } else {
+        const query = { email: email };
+        const user = await userCollection.findOne(query);
+        const result = { student: user?.role === "student" };
         res.send(result);
       }
     });
@@ -138,6 +154,60 @@ async function run() {
       };
 
       const result = await userCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // Class collection
+    app.get("/class", async (req, res) => {
+      const result = await classCollection.find().toArray();
+
+      res.send(result);
+    });
+
+    // verifyJWT, verifyAdmin,
+    app.post("/class", async (req, res) => {
+      const newItem = req.body;
+      const result = await classCollection.insertOne(newItem);
+      res.send(result);
+    });
+
+    app.patch("/class/:id", async (req, res) => {
+      const classId = req.params.id;
+      const { status } = req.body;
+
+      try {
+        // Find the class by its ID in the database
+        const classItem = await classCollection.findOne({
+          _id: ObjectId(classId),
+        });
+
+        // If the class doesn't exist, return an error response
+        if (!classItem) {
+          return res.status(404).json({ message: "Class not found" });
+        }
+
+        // Update the approval status
+        classItem.approvalStatus = status;
+
+        // Update the class in the database
+        const result = await classCollection.updateOne(
+          { _id: ObjectId(classId) },
+          { $set: classItem }
+        );
+        res.send(result);
+
+        res.json({ message: "Class status updated successfully" });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "An error occurred" });
+      }
+    });
+
+    // verifyJWT, verifyAdmin,
+    app.delete("/class/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await classCollection.deleteOne(query);
       res.send(result);
     });
 
