@@ -50,6 +50,7 @@ async function run() {
     const database = client.db("Photograph");
     const userCollection = database.collection("users");
     const classCollection = database.collection("class");
+    const selectedCollection = database.collection("select");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -218,6 +219,52 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await classCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    // Get select
+    app.get("/select", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+
+      if (!email) {
+        res.send([]);
+      }
+
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res
+          .status(403)
+          .send({ error: true, message: "provident access" });
+      }
+
+      const query = { email: email };
+
+      const result = await selectedCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // Insert select
+    app.patch("/select", async (req, res) => {
+      const item = req.body;
+
+      // Check if the item already exists in the selection
+      const alreadyExists = await selectedCollection.findOne({ _id: item._id });
+
+      if (alreadyExists) {
+        // Item already exists, send the response with alreadyExists property set to true
+        res.send({ alreadyExists: true, result: alreadyExists });
+      } else {
+        // Item doesn't exist, add it to the selection and send the response with alreadyExists property set to false
+        const result = await selectedCollection.insertOne(item);
+        res.send({ alreadyExists: false, result });
+      }
+    });
+
+    // Delete select
+    app.delete("/select/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await selectedCollection.deleteOne(query);
       res.send(result);
     });
 
