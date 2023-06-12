@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
-
+const stripe = require("stripe")(process.env.STRIPE_API_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
@@ -45,12 +45,13 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    client.connect();
 
     const database = client.db("Photograph");
     const userCollection = database.collection("users");
     const classCollection = database.collection("class");
     const selectedCollection = database.collection("select");
+    const paymentCollection = database.collection("payments");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -268,8 +269,36 @@ async function run() {
       res.send(result);
     });
 
+    // create payment intent
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // payment related api
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      const query = {
+        _id: { $in: payment.selectItems.map((id) => new ObjectId(id)) },
+      };
+      const deleteResult = await selectedCollection.deleteMany(query);
+
+      res.send({ insertResult, deleteResult });
+    });
+
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
