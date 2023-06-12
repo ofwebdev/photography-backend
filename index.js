@@ -77,11 +77,8 @@ async function run() {
     // POST USER
     app.post("/users", async (req, res) => {
       const user = req.body;
-      console.log(user);
       const query = { email: user.email };
       const existingUser = await userCollection.findOne(query);
-
-      console.log("existing user", existingUser);
 
       if (existingUser) {
         return res.send({ message: "user already exists" });
@@ -101,8 +98,6 @@ async function run() {
     app.get("/users/admin/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
 
-      console.log(email);
-
       if (req.decoded.email !== email) {
         res.send({ admin: false });
       }
@@ -116,8 +111,6 @@ async function run() {
     app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
 
-      console.log(email);
-
       if (req.decoded.email !== email) {
         res.send({ instructor: false });
       } else {
@@ -130,8 +123,6 @@ async function run() {
 
     app.get("/users/student/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
-
-      console.log(email);
 
       if (req.decoded.email !== email) {
         res.send({ student: false });
