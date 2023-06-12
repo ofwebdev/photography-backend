@@ -47,6 +47,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     client.connect();
 
+    // Database collection
     const database = client.db("Photograph");
     const userCollection = database.collection("users");
     const classCollection = database.collection("class");
@@ -177,6 +178,7 @@ async function run() {
       res.send(result);
     });
 
+    // PATCH request
     app.patch("/class/:id", async (req, res) => {
       const classId = req.params.id;
       const { status } = req.body;
@@ -192,6 +194,7 @@ async function run() {
       res.send(result);
     });
 
+    // Post Class
     app.post("/class/:id", async (req, res) => {
       const classId = req.params.id;
       const { feedback } = req.body;
