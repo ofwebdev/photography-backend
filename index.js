@@ -291,6 +291,17 @@ async function run() {
       res.send({ insertResult, deleteResult });
     });
 
+    // Retrieve payment history
+    app.get("/payment-history", async (req, res) => {
+      try {
+        const paymentHistory = await paymentCollection.find({}).toArray();
+        res.send(paymentHistory);
+      } catch (error) {
+        console.log(error);
+        res.status(500).send("Error retrieving payment history.");
+      }
+    });
+
     // Send a ping to confirm a successful connection
     client.db("admin").command({ ping: 1 });
     console.log(
